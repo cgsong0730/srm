@@ -1,0 +1,8 @@
+tracepoint:syscalls:sys_enter_fork
+{
+  printf("%d,", pid);
+}
+interval:s:10 
+{
+  exit();
+}
