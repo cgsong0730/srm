@@ -5,7 +5,9 @@ import (
 	"os"
 	"os/exec"
 	"srm/lib/logger"
+	_ "srm/lib/process_tree"
 	"srm/workload/w1"
+	"strconv"
 	"strings"
 	"time"
 
@@ -13,8 +15,45 @@ import (
 	specs "github.com/opencontainers/runtime-spec/specs-go"
 )
 
-func getSystemcall(systemcall string) {
+type Node struct {
+	pid      int
+	cnt      int
+	children []*Node
+}
 
+var rootPid int
+
+// breadth-first search
+func findById(root *Node, pid int) *Node {
+	queue := make([]*Node, 0)
+	queue = append(queue, root)
+	for len(queue) > 0 {
+		nextUp := queue[0]
+		queue = queue[1:]
+		if nextUp.pid == pid {
+			return nextUp
+		}
+		if len(nextUp.children) > 0 {
+			for _, child := range nextUp.children {
+				queue = append(queue, child)
+			}
+		}
+	}
+	return nil
+}
+
+func getChildNode(pid int) {
+	cmd := exec.Command("pgrep", "-P", strconv.Itoa(pid))
+	output, err := cmd.Output()
+	if err != nil {
+		logger.Fatal("Fail to find child nodes.")
+	}
+	println("child: ", string(output))
+}
+
+func getSystemcall(root *Node, systemcall string) {
+
+	var pid int
 	cmd := exec.Command("bpftrace", systemcall+".bt")
 	output, err := cmd.Output()
 	if err != nil {
@@ -26,7 +65,11 @@ func getSystemcall(systemcall string) {
 	pids = pids[:len(pids)-1]
 
 	for _, str := range pids {
-		fmt.Println(systemcall, ":", str)
+		pid, _ = strconv.Atoi(str)
+		if findById(root, pid) != nil {
+			fmt.Println(systemcall, ":", str)
+			getChildNode(pid)
+		}
 	}
 }
 
@@ -68,14 +111,38 @@ func main() {
 
 	defer control.Delete()
 
-	println("[CSS] Start")
+	p1 := Node{
+		pid: 1,
+		cnt: 5,
+	}
+
+	p2 := Node{
+		pid: 2,
+		cnt: 10,
+	}
+
+	rootPid, _ = strconv.Atoi(os.Args[1])
+	rootNode := Node{
+		pid:      rootPid,
+		cnt:      1,
+		children: []*Node{&p2},
+	}
+	rootNode.children = append(rootNode.children, &p1)
+
+	//println("cnt:", px.cnt)
+	//println("container shell pid:", os.Args[1])
+	println("root process's pid:", rootNode.pid)
+
+	getChildNode(rootPid)
+
+	println("[CSS] Start", len(rootNode.children))
 
 	//go genWorkload(1000000)
 	//go genWorkload(1000000)
 	for true {
-		//go getSystemcall("clone")
-		//go getSystemcall("mmap")
-		go getSystemcall("fork")
+		go getSystemcall(&rootNode, "clone")
+		go getSystemcall(&rootNode, "mmap")
+		go getSystemcall(&rootNode, "fork")
 		time.Sleep(10 * time.Second)
 	}
 
