@@ -7,7 +7,7 @@ type Node struct {
 }
 
 // breath-first search
-func findById(root *Node, pid int) *Node {
+func FindById(root *Node, pid int) *Node {
 	queue := make([]*Node, 0)
 	queue = append(queue, root)
 	for len(queue) > 0 {
@@ -25,7 +25,7 @@ func findById(root *Node, pid int) *Node {
 	return nil
 }
 
-func createRootNode(pid int) *Node {
+func FreateRootNode(pid int) *Node {
 	rootNode := Node{
 		pid: pid,
 		cnt: 0,

@@ -5,7 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"srm/lib/logger"
-	_ "srm/lib/process_tree"
+	"srm/lib/process_tree"
 	"srm/workload/w1"
 	"strconv"
 	"strings"
@@ -15,15 +15,18 @@ import (
 	specs "github.com/opencontainers/runtime-spec/specs-go"
 )
 
+/*
 type Node struct {
 	pid      int
 	cnt      int
 	children []*Node
 }
+*/
 
 var rootPid int
 
 // breadth-first search
+/*
 func findById(root *Node, pid int) *Node {
 	queue := make([]*Node, 0)
 	queue = append(queue, root)
@@ -41,6 +44,7 @@ func findById(root *Node, pid int) *Node {
 	}
 	return nil
 }
+*/
 
 func getChildNode(pid int) {
 	cmd := exec.Command("pgrep", "-P", strconv.Itoa(pid))
@@ -51,7 +55,7 @@ func getChildNode(pid int) {
 	println("child: ", string(output))
 }
 
-func getSystemcall(root *Node, systemcall string) {
+func getSystemcall(root *process_tree.Node, systemcall string) {
 
 	var pid int
 	cmd := exec.Command("bpftrace", systemcall+".bt")
@@ -66,7 +70,7 @@ func getSystemcall(root *Node, systemcall string) {
 
 	for _, str := range pids {
 		pid, _ = strconv.Atoi(str)
-		if findById(root, pid) != nil {
+		if process_tree.FindById(root, pid) != nil {
 			fmt.Println(systemcall, ":", str)
 			getChildNode(pid)
 		}
@@ -111,21 +115,21 @@ func main() {
 
 	defer control.Delete()
 
-	p1 := Node{
+	p1 := process_tree.Node{
 		pid: 1,
 		cnt: 5,
 	}
 
-	p2 := Node{
+	p2 := process_tree.Node{
 		pid: 2,
 		cnt: 10,
 	}
 
 	rootPid, _ = strconv.Atoi(os.Args[1])
-	rootNode := Node{
+	rootNode := process_tree.Node{
 		pid:      rootPid,
 		cnt:      1,
-		children: []*Node{&p2},
+		children: []*process_tree.Node{&p2},
 	}
 	rootNode.children = append(rootNode.children, &p1)
 
@@ -137,8 +141,6 @@ func main() {
 
 	println("[CSS] Start", len(rootNode.children))
 
-	//go genWorkload(1000000)
-	//go genWorkload(1000000)
 	for true {
 		go getSystemcall(&rootNode, "clone")
 		go getSystemcall(&rootNode, "mmap")
