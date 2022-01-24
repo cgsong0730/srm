@@ -1,17 +1,18 @@
 package monitor
 
 import (
-    "fmt"
-    "os/exec"
-    "srm/lib/logger"
-    "strconv"
-    "strings"
+	"fmt"
+	"os/exec"
+	"srm/lib/logger"
+	"srm/lib/ptree"
+	"strconv"
+	"strings"
 )
 
 type Node struct {
-    pid      int
-    cnt      int
-    children []*Node
+	pid      int
+	cnt      int
+	children []*Node
 }
 
 var rootPid int
@@ -68,63 +69,57 @@ func findById(root *Node, pid int) *Node {
 
 func FindContainer() []int {
 
-    var containers []int
+	var containers []int
 
-    cmd := exec.Command("./fc.sh")
-    output, err := cmd.Output()
-    if err != nil {
-        logger.Fatal("Fail to find namespace.")
-    }
-    fmt.Println(string(output))
+	cmd := exec.Command("./fc.sh")
+	output, err := cmd.Output()
+	if err != nil {
+		logger.Fatal("Fail to find namespace.")
+	}
+	//fmt.Println(string(output))
 
-    pids := strings.Split(string(output), "\n")
-    pids = pids[:len(pids)-1]
+	pids := strings.Split(string(output), "\n")
+	pids = pids[:len(pids)-1]
 
-    for _, str := range pids {
-        pid, _ := strconv.Atoi(str)
-        fmt.Println("Singularity -> ", pid)
-        containers = append(containers, pid)
-    }
+	for _, str := range pids {
+		pid, _ := strconv.Atoi(str)
+		fmt.Println("Singularity -> ", pid)
+		containers = append(containers, pid)
+	}
 
-    return containers
+	return containers
 }
 
 func GetChildTask(pid int) {
-    cmd := exec.Command("pgrep", "-P", strconv.Itoa(pid))
-    output, err := cmd.Output()
-    if err != nil {
-        logger.Fatal("Fail to find child nodes.")
-    }
-    pids := strings.Split(string(output), "\n")
-    pids = pids[:len(pids)-1]
+	cmd := exec.Command("pgrep", "-P", strconv.Itoa(pid))
+	output, err := cmd.Output()
+	if err != nil {
+		logger.Fatal("Fail to find child nodes.")
+	}
+	pids := strings.Split(string(output), "\n")
+	pids = pids[:len(pids)-1]
 
-    for _, str := range pids {
-        println("child: ", str)
-    }
+	for _, str := range pids {
+		println("child: ", str)
+	}
 }
 
-func GetSystemcall(systemcall string) {
+func GetSystemcall(root *ptree.Node, systemcall string) {
 
-    var pid int
-    cmd := exec.Command("bpftrace", systemcall+".bt")
-    output, err := cmd.Output()
-    if err != nil {
-        logger.Fatal("Fail to execute bpftrace command.")
-    }
+	var pid int
+	cmd := exec.Command("bpftrace", systemcall+".bt")
+	output, err := cmd.Output()
+	if err != nil {
+		logger.Fatal("Fail to execute bpftrace command.")
+	}
 
-    str := strings.Split(string(output), "\n")
-    pids := strings.Split(str[1], ",")
-    pids = pids[:len(pids)-1]
+	str := strings.Split(string(output), "\n")
+	pids := strings.Split(str[1], ",")
+	pids = pids[:len(pids)-1]
 
-    for _, str := range pids {
-        pid, _ = strconv.Atoi(str)
-        /*
-            if findById(&rootNode, pid) != nil {
-                fmt.Println(systemcall, ":", str)
-                getChildNode(pid)
-            }
-        */
-        fmt.Println(pid, "->", systemcall)
-    }
+	for _, str := range pids {
+		pid, _ = strconv.Atoi(str)
+		ptree.PlusCount(root, pid)
+		//fmt.Println(pid, "->", systemcall)
+	}
 }
-
