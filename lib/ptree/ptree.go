@@ -36,6 +36,7 @@ func CreateRootChild(root *Node, pid int) {
 
 func CleanRootChild(root *Node) {
 	for _, child := range root.Children {
+		child.Cnt = 0
 		child.Children = nil
 	}
 }

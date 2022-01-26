@@ -1,13 +1,14 @@
 package controller
 
 import (
-	"os"
 	"srm/lib/logger"
+	"strconv"
 
 	"github.com/containerd/cgroups"
 	"github.com/opencontainers/runtime-spec/specs-go"
 )
 
+/*
 func init() {
 	pid := os.Getpid()
 	shares := uint64(100)
@@ -30,13 +31,27 @@ func init() {
 
 	defer control.Delete()
 }
+*/
 
-func CreateResourcePolicy() error {
+func CreateResourcePolicy(pid int, cpus string) error {
+	shares := uint64(100)
 
-	return nil
-}
+	control, err := cgroups.New(cgroups.V1, cgroups.StaticPath(strconv.Itoa(pid)),
+		&specs.LinuxResources{
+			CPU: &specs.LinuxCPU{
+				Shares: &shares,
+				Cpus:   cpus,
+			},
+		})
+	if err != nil {
+		logger.Fatal("Fail to create cgroup.")
+	}
 
-func SetPolicy(int pid) error {
+	if err := control.Add(cgroups.Process{Pid: pid}); err != nil {
+		logger.Fatal("Fail to add cgroup.")
+	}
+
+	defer control.Delete()
 
 	return nil
 }

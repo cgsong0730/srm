@@ -2,7 +2,7 @@ tracepoint:syscalls:sys_enter_mmap
 {
   printf("%d,", pid);
 }
-interval:s:10 
+interval:s:3
 {
   exit();
 }

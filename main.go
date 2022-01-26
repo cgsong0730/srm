@@ -54,35 +54,36 @@ func init() {
 
 }
 
-func main() {
-	/*
-	   pid := os.Getpid()
-	   shares := uint64(100)
-	   var cpus string = "0-1"
+func main() { /*
 
-	   control, err := cgroups.New(cgroups.V1, cgroups.StaticPath("/cgs"), &specs.LinuxResources{
-	       CPU: &specs.LinuxCPU{
-	           Shares: &shares,
-	           Cpus:   cpus,
-	       },
-	   })
-	   if err != nil {
-	       logger.Fatal("Fail to create cgroup.")
-	   }
+		pid := os.Getpid()
+		shares := uint64(100)
+		var cpus string = "0-1"
 
-	   if err := control.Add(cgroups.Process{Pid: pid}); err != nil {
-	       logger.Fatal("Fail to add cgroup.")
-	   }
+		control, err := cgroups.New(cgroups.V1, cgroups.StaticPath("/cgs"), &specs.LinuxResources{
+			CPU: &specs.LinuxCPU{
+				Shares: &shares,
+				Cpus:   cpus,
+			},
+		})
+		if err != nil {
+			logger.Fatal("Fail to create cgroup.")
+		}
 
-	   defer control.Delete()
+		if err := control.Add(cgroups.Process{Pid: pid}); err != nil {
+			logger.Fatal("Fail to add cgroup.")
+		}
+
+		defer control.Delete()
 	*/
 
 	// MAPE-K Loop
 	var containerNodeList []*ptree.Node
 	var ioContainerList []*ptree.Node
 	var cpuContainerList []*ptree.Node
-	var mapeCnt = 0
-
+	var mapeCnt int = 0
+	var useCleaning bool = false
+	var useManagement bool = false
 	for true {
 		// go monitor.GetSystemcall("clone")
 		// go monitor.GetSystemcall("fork")
@@ -116,27 +117,39 @@ func main() {
 		// A
 		for _, node := range root.Children {
 			sum := ptree.SumTree(node)
-			fmt.Println("sum: ", sum, ", pid: ", node.Pid)
-			if sum >= 20 {
+			fmt.Println("Singularity -> pid:", node.Pid, ", sum: ", sum)
+			if sum >= config.IoThresholdValue {
 				ioContainerList = append(ioContainerList, node)
+				useCleaning = true
+				useManagement = true
 			} else {
 				cpuContainerList = append(cpuContainerList, node)
 			}
 		}
 
 		for _, node := range ioContainerList {
-			fmt.Println("io: ", node.Pid)
+			fmt.Println("io-intensive: ", node.Pid)
+			//controller.CreateResourcePolicy(node.Pid, config.MCpus)
 		}
 
 		for _, node := range cpuContainerList {
-			fmt.Println("cpu: ", node.Pid)
+			fmt.Println("cpu-intensive: ", node.Pid)
+			//controller.CreateResourcePolicy(node.Pid, "2-15")
 		}
 
-		if mapeCnt == 4 {
-			ptree.CleanRootChild(&root)
-			mapeCnt = 0
-		} else {
-			mapeCnt += 1
+		if useManagement == true {
+
+			useManagement = false
+		}
+
+		if useCleaning == true {
+			if mapeCnt == config.CleaningInterval-1 {
+				ptree.CleanRootChild(&root)
+				mapeCnt = 0
+				useCleaning = false
+			} else {
+				mapeCnt += 1
+			}
 		}
 		ioContainerList = nil
 		cpuContainerList = nil

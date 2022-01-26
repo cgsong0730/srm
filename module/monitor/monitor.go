@@ -1,7 +1,6 @@
 package monitor
 
 import (
-	"fmt"
 	"os/exec"
 	"srm/lib/logger"
 	"srm/lib/ptree"
@@ -83,7 +82,7 @@ func FindContainer() []int {
 
 	for _, str := range pids {
 		pid, _ := strconv.Atoi(str)
-		fmt.Println("Singularity -> ", pid)
+		//fmt.Println("Singularity -> ", pid)
 		containers = append(containers, pid)
 	}
 
@@ -100,7 +99,7 @@ func GetChildTask(root *ptree.Node, pid int) {
 
 		for _, str := range pids {
 			cpid, _ := strconv.Atoi(str)
-			println("child: ", cpid)
+			//println("child: ", cpid)
 			ptree.CreateChild(root, pid, cpid)
 			GetChildTask(root, cpid)
 		}
