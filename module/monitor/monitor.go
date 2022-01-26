@@ -90,17 +90,20 @@ func FindContainer() []int {
 	return containers
 }
 
-func GetChildTask(pid int) {
+func GetChildTask(root *ptree.Node, pid int) {
 	cmd := exec.Command("pgrep", "-P", strconv.Itoa(pid))
 	output, err := cmd.Output()
-	if err != nil {
-		logger.Fatal("Fail to find child nodes.")
-	}
-	pids := strings.Split(string(output), "\n")
-	pids = pids[:len(pids)-1]
 
-	for _, str := range pids {
-		println("child: ", str)
+	if output != nil && err == nil {
+		pids := strings.Split(string(output), "\n")
+		pids = pids[:len(pids)-1]
+
+		for _, str := range pids {
+			cpid, _ := strconv.Atoi(str)
+			println("child: ", cpid)
+			ptree.CreateChild(root, pid, cpid)
+			GetChildTask(root, cpid)
+		}
 	}
 }
 

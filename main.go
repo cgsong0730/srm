@@ -51,13 +51,7 @@ func init() {
 	pid := os.Getpid()
 	//  rootNode = ptree.CreateRootNode(pid)
 	println("[CSS] PID -> ", pid)
-	containers = monitor.FindContainer()
-	for _, pid := range containers {
-		monitor.GetChildTask(pid)
-		ptree.CreateChild(&root, 1, pid)
-	}
 
-	ptree.PrintTree(&root, 0)
 }
 
 func main() {
@@ -84,11 +78,32 @@ func main() {
 	*/
 
 	// MAPE-K Loop
-	for true {
-		//      go monitor.GetSystemcall("clone")
-		go monitor.GetSystemcall(&root, "mmap")
-		//      go monitor.GetSystemcall("fork")
+	var containerNodeList []*ptree.Node
+	var ioContainerList []*ptree.Node
+	var cpuContainerList []*ptree.Node
+	var mapeCnt = 0
 
+	for true {
+		// go monitor.GetSystemcall("clone")
+		// go monitor.GetSystemcall("fork")
+
+		// M
+		// update container list
+		containerNodeList = nil
+		containers = monitor.FindContainer()
+		for _, pid := range containers {
+
+			monitor.GetChildTask(&root, pid)
+			ptree.CreateRootChild(&root, pid)
+			for _, node := range root.Children {
+				if pid == node.Pid {
+					containerNodeList = append(containerNodeList, node)
+				}
+			}
+		}
+		root.Children = containerNodeList
+
+		go monitor.GetSystemcall(&root, "mmap")
 		time.Sleep(time.Duration(config.Interval) * time.Second)
 
 		cmd := exec.Command("clear")
@@ -97,6 +112,34 @@ func main() {
 			fmt.Println(err)
 		}
 		ptree.PrintTree(&root, 0)
+
+		// A
+		for _, node := range root.Children {
+			sum := ptree.SumTree(node)
+			fmt.Println("sum: ", sum, ", pid: ", node.Pid)
+			if sum >= 20 {
+				ioContainerList = append(ioContainerList, node)
+			} else {
+				cpuContainerList = append(cpuContainerList, node)
+			}
+		}
+
+		for _, node := range ioContainerList {
+			fmt.Println("io: ", node.Pid)
+		}
+
+		for _, node := range cpuContainerList {
+			fmt.Println("cpu: ", node.Pid)
+		}
+
+		if mapeCnt == 4 {
+			ptree.CleanRootChild(&root)
+			mapeCnt = 0
+		} else {
+			mapeCnt += 1
+		}
+		ioContainerList = nil
+		cpuContainerList = nil
 	}
 
 	end()

@@ -12,11 +12,32 @@ type Node struct {
 
 func CreateChild(root *Node, ppid int, cpid int) {
 	parent := FindByPid(root, ppid)
-	child := Node{
-		Pid: cpid,
-		Cnt: 0,
+	child := FindByPid(root, cpid)
+
+	if parent != nil && child == nil {
+		child := Node{
+			Pid: cpid,
+			Cnt: 0,
+		}
+		parent.Children = append(parent.Children, &child)
 	}
-	parent.Children = append(parent.Children, &child)
+}
+
+func CreateRootChild(root *Node, pid int) {
+	check := FindByPid(root, pid)
+	if check == nil {
+		child := Node{
+			Pid: pid,
+			Cnt: 0,
+		}
+		root.Children = append(root.Children, &child)
+	}
+}
+
+func CleanRootChild(root *Node) {
+	for _, child := range root.Children {
+		child.Children = nil
+	}
 }
 
 func AddChild(root *Node, ppid int, child *Node) {
