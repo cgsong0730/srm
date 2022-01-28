@@ -1,3 +1,3 @@
 #! /bin/bash
 
-cat /proc/cpuinfo | grep "processor" | awk '{print $3}'
+cat /proc/cpuinfo | grep "processor" | awk '{print $3}' | wc -l
