@@ -65,30 +65,41 @@ func FindByPid(root *Node, pid int) *Node {
 	return nil
 }
 
-func PrintTree(root *Node, depth int) {
-	/*
-		cmd := exec.Command("clear")
-		cmd.Stdout = os.Stdout
+func PrintTree(root *Node, depth int, last bool) {
 
-		if err := cmd.Run(); err != nil {
-			fmt.Println(err)
-		}
-	*/
 	if depth != 0 {
-		for i := 1; i <= depth; i++ {
+		for i := 1; i < depth; i++ {
 			fmt.Printf("   ")
 		}
-		fmt.Printf("└─")
+		if last {
+			fmt.Printf("└──")
+		} else {
+			fmt.Printf("├──")
+		}
 	} else {
-		fmt.Printf("  ")
+		fmt.Printf("")
 	}
-	fmt.Printf("(%d)[%d]\n", root.Pid, root.Cnt)
+	fmt.Printf("%d[%d]\n", root.Pid, root.Cnt)
 	if len(root.Children) > 0 {
 		//fmt.Println("# of children:", len(root.children))
-		for _, child := range root.Children {
-			PrintTree(child, depth+1)
+		for i, child := range root.Children {
+			isLast := false
+			if i == len(root.Children)-1 {
+				isLast = true
+			}
+			PrintTree(child, depth+1, isLast)
 		}
 	}
+}
+
+func SumContainerTree(root *Node) int {
+	sum := 0
+	if len(root.Children) > 0 {
+		for _, child := range root.Children {
+			sum += SumTree(child)
+		}
+	}
+	return sum
 }
 
 func SumTree(root *Node) int {
