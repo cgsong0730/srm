@@ -44,15 +44,12 @@ func main() {
 	var mapeCnt int = 0
 	var useCleaning bool = false
 	var useManagement bool = false
-	//var isCgroup bool = false
-	//var ioControl cgroups.Cgroup
 
 	var containerCgroup map[int]cgroups.Cgroup
 	containerCgroup = make(map[int]cgroups.Cgroup)
 	var oldContainerList []int
 
 	for true {
-
 		// M
 		containers = monitor.FindContainer()
 		for _, pid := range containers {
