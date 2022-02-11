@@ -1,0 +1,8 @@
+tracepoint:syscalls:sys_enter_futex
+{
+  printf("%d,", pid);
+}
+interval:s:3
+{
+  exit();
+}

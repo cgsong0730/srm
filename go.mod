@@ -3,6 +3,7 @@ module srm
 go 1.16
 
 require (
+	github.com/Terry-Mao/goconf v0.0.0-20161115082538-13cb73d70c44
 	github.com/cilium/ebpf v0.8.0 // indirect
 	github.com/containerd/cgroups v1.0.1
 	github.com/go-delve/delve v1.8.0 // indirect

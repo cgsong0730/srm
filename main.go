@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"srm/config"
+	config "srm/lib/config_parser"
 	"srm/lib/logger"
 	"srm/lib/ptree"
 	"srm/module/analyzer"
@@ -25,6 +25,12 @@ func init() {
 		logger.Fatal("Fail to initialize logger.")
 		end()
 	}
+
+	err = config.Init()
+	if err != nil {
+		logger.Fatal("Fail to initialize config_parser")
+	}
+
 	logger.Info("#####[srm start]#####")
 
 	pid := os.Getpid()
@@ -57,6 +63,19 @@ func main() {
 			monitor.GetChildTask(&root, pid)
 		}
 
+		for index, pid := range oldContainerList {
+			isContainer := false
+			for _, cpid := range containers {
+				if pid == cpid {
+					isContainer = true
+				}
+			}
+			if isContainer == false {
+				root.Children = remove(root.Children, index)
+				fmt.Println("deleted container:", pid, ", index:", index)
+			}
+		}
+
 		for _, node := range root.Children {
 			isPid := false
 			for _, pid := range oldContainerList {
@@ -68,13 +87,18 @@ func main() {
 			if isPid == false {
 				containerCgroup[node.Pid], _ = controller.CreateResourcePolicy(node, "0-3")
 				controller.AddResourcePolicy(node, containerCgroup[node.Pid])
-				oldContainerList = append(oldContainerList, node.Pid)
+				//oldContainerList = append(oldContainerList, node.Pid)
 			}
 		}
 
-		go monitor.GetSystemcall(&root, "mmap")
-		time.Sleep(time.Duration(config.Interval) * time.Second)
+		oldContainerList = nil
+		for _, node := range root.Children {
+			oldContainerList = append(oldContainerList, node.Pid)
+		}
 
+		go monitor.GetSystemcall(&root, "futex")
+		time.Sleep(time.Duration(config.Setting.Mape) * time.Second)
+		fmt.Println("mape:", config.Setting.Mape)
 		cmd := exec.Command("clear")
 		cmd.Stdout = os.Stdout
 		if err := cmd.Run(); err != nil {
@@ -86,7 +110,7 @@ func main() {
 		for _, node := range root.Children {
 			sum := ptree.SumContainerTree(node)
 			fmt.Println("Singularity -> pid:", node.Pid, ", sum: ", sum)
-			if sum >= config.IoThresholdValue {
+			if sum >= config.Setting.Threshold {
 				ioContainerList = append(ioContainerList, node)
 				useCleaning = true
 				useManagement = true
@@ -98,7 +122,7 @@ func main() {
 		// PE
 		for _, node := range ioContainerList {
 			fmt.Println("io-intensive: ", node.Pid)
-			controller.UpdateResourcePolicy(containerCgroup[node.Pid], config.MCpus)
+			controller.UpdateResourcePolicy(containerCgroup[node.Pid], config.Setting.Minimum)
 		}
 
 		for i, node := range cpuContainerList {
@@ -122,20 +146,41 @@ func main() {
 		}
 
 		if useCleaning == true {
-			if mapeCnt == config.CleaningInterval-1 {
+			if mapeCnt == config.Setting.Clean-1 {
+				fmt.Println("clean start")
 				ptree.CleanRootChild(&root)
 				mapeCnt = 0
 				useCleaning = false
 			} else {
 				mapeCnt += 1
 			}
+
+			fmt.Println("clean:", config.Setting.Clean, ", mapeCnt:", mapeCnt)
 		}
 		ioContainerList = nil
 		cpuContainerList = nil
-		root.Children = nil
+		//root.Children = nil
+
 	} // of MAPE-K
 
 	end()
+}
+
+/*
+func remove(s []*ptree.Node, i int) []*ptree.Node {
+	s[i] = s[len(s)-1]
+	return s[:len(s)-1]
+}
+*/
+
+func remove(slice []*ptree.Node, s int) []*ptree.Node {
+	ret := make([]*ptree.Node, 0)
+	if len(slice)-1 == s {
+		ret = append(ret, slice[:s]...)
+		return append(ret, slice[s+1:]...)
+	} else {
+		return append(ret, slice[:s]...)
+	}
 }
 
 func end() {
