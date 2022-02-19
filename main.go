@@ -51,9 +51,11 @@ func main() {
 	var useCleaning bool = false
 	var useManagement bool = false
 
-	var containerCgroup map[int]cgroups.Cgroup
-	containerCgroup = make(map[int]cgroups.Cgroup)
+	//var containerCgroup map[int]cgroups.Cgroup
+	containerCgroup := make(map[int]cgroups.Cgroup)
 	var oldContainerList []int
+
+	numOfCpu := analyzer.GetCpuInfo()
 
 	for true {
 		// M
@@ -87,7 +89,6 @@ func main() {
 			if isPid == false {
 				containerCgroup[node.Pid], _ = controller.CreateResourcePolicy(node, "0-3")
 				controller.AddResourcePolicy(node, containerCgroup[node.Pid])
-				//oldContainerList = append(oldContainerList, node.Pid)
 			}
 		}
 
@@ -120,16 +121,32 @@ func main() {
 		}
 
 		// PE
-		for _, node := range ioContainerList {
-			fmt.Println("io-intensive: ", node.Pid)
-			controller.UpdateResourcePolicy(containerCgroup[node.Pid], config.Setting.Minimum)
+		if len(cpuContainerList) != 0 {
+			for _, node := range ioContainerList {
+				fmt.Println("io-intensive: ", node.Pid)
+				controller.UpdateResourcePolicy(containerCgroup[node.Pid], config.Setting.Minimum)
+			}
+		} else {
+			for i, node := range ioContainerList {
+				fmt.Println("io-intensive: ", node.Pid)
+
+				//numOfCpu := analyzer.GetCpuInfo()
+				numOfContainer := len(ioContainerList)
+
+				if numOfCpu >= numOfContainer {
+					part := numOfCpu / numOfContainer
+					start := i * part
+					cpus := "" + strconv.Itoa(i*start) + "-" + strconv.Itoa(start+part-1)
+					controller.UpdateResourcePolicy(containerCgroup[node.Pid], cpus)
+				}
+			}
 		}
 
 		for i, node := range cpuContainerList {
 
 			fmt.Println("cpu-intensive: ", node.Pid, ", len: ", len(cpuContainerList))
 
-			numOfCpu := analyzer.GetCpuInfo()
+			//numOfCpu := analyzer.GetCpuInfo()
 			numOfContainer := len(cpuContainerList)
 
 			if numOfCpu >= numOfContainer {
@@ -159,19 +176,11 @@ func main() {
 		}
 		ioContainerList = nil
 		cpuContainerList = nil
-		//root.Children = nil
 
 	} // of MAPE-K
 
 	end()
 }
-
-/*
-func remove(s []*ptree.Node, i int) []*ptree.Node {
-	s[i] = s[len(s)-1]
-	return s[:len(s)-1]
-}
-*/
 
 func remove(slice []*ptree.Node, s int) []*ptree.Node {
 	ret := make([]*ptree.Node, 0)
