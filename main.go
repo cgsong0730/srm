@@ -51,8 +51,8 @@ func main() {
 	var useCleaning bool = false
 	var useManagement bool = false
 
-	//var containerCgroup map[int]cgroups.Cgroup
-	containerCgroup := make(map[int]cgroups.Cgroup)
+	var containerCgroup map[int]cgroups.Cgroup
+	containerCgroup = make(map[int]cgroups.Cgroup)
 	var oldContainerList []int
 
 	numOfCpu := analyzer.GetCpuInfo()
@@ -65,6 +65,7 @@ func main() {
 			monitor.GetChildTask(&root, pid)
 		}
 
+		cntOfDeletion := 0
 		for index, pid := range oldContainerList {
 			isContainer := false
 			for _, cpid := range containers {
@@ -73,9 +74,11 @@ func main() {
 				}
 			}
 			if isContainer == false {
-				root.Children = remove(root.Children, index)
-				fmt.Println("deleted container:", pid, ", index:", index)
+				root.Children = remove(root.Children, index-cntOfDeletion)
+				//fmt.Println("deleted container:", pid, ", index:", index)
+				cntOfDeletion++
 			}
+
 		}
 
 		for _, node := range root.Children {
@@ -87,7 +90,7 @@ func main() {
 			}
 
 			if isPid == false {
-				containerCgroup[node.Pid], _ = controller.CreateResourcePolicy(node, "0-3")
+				containerCgroup[node.Pid], _ = controller.CreateResourcePolicy(node, "0-15")
 				controller.AddResourcePolicy(node, containerCgroup[node.Pid])
 			}
 		}
@@ -99,18 +102,18 @@ func main() {
 
 		go monitor.GetSystemcall(&root, "futex")
 		time.Sleep(time.Duration(config.Setting.Mape) * time.Second)
-		fmt.Println("mape:", config.Setting.Mape)
+		//fmt.Println("mape:", config.Setting.Mape)
 		cmd := exec.Command("clear")
 		cmd.Stdout = os.Stdout
 		if err := cmd.Run(); err != nil {
 			fmt.Println(err)
 		}
-		ptree.PrintTree(&root, 0, false)
+		//ptree.PrintTree(&root, 0, false)
 
 		// A
 		for _, node := range root.Children {
 			sum := ptree.SumContainerTree(node)
-			fmt.Println("Singularity -> pid:", node.Pid, ", sum: ", sum)
+			//fmt.Println("Singularity -> pid:", node.Pid, ", sum: ", sum)
 			if sum >= config.Setting.Threshold {
 				ioContainerList = append(ioContainerList, node)
 				useCleaning = true
@@ -123,12 +126,12 @@ func main() {
 		// PE
 		if len(cpuContainerList) != 0 {
 			for _, node := range ioContainerList {
-				fmt.Println("io-intensive: ", node.Pid)
+				//fmt.Println("io-intensive: ", node.Pid)
 				controller.UpdateResourcePolicy(containerCgroup[node.Pid], config.Setting.Minimum)
 			}
 		} else {
 			for i, node := range ioContainerList {
-				fmt.Println("io-intensive: ", node.Pid)
+				//fmt.Println("io-intensive: ", node.Pid)
 
 				//numOfCpu := analyzer.GetCpuInfo()
 				numOfContainer := len(ioContainerList)
@@ -144,7 +147,7 @@ func main() {
 
 		for i, node := range cpuContainerList {
 
-			fmt.Println("cpu-intensive: ", node.Pid, ", len: ", len(cpuContainerList))
+			//fmt.Println("cpu-intensive: ", node.Pid, ", len: ", len(cpuContainerList))
 
 			//numOfCpu := analyzer.GetCpuInfo()
 			numOfContainer := len(cpuContainerList)
@@ -152,8 +155,8 @@ func main() {
 			if numOfCpu >= numOfContainer {
 				part := numOfCpu / numOfContainer
 				start := i * part
-				cpus := "" + strconv.Itoa(i*start) + "-" + strconv.Itoa(start+part-1)
-				fmt.Println("cpus: ", cpus)
+				cpus := "" + strconv.Itoa(start) + "-" + strconv.Itoa(start+part-1)
+				//fmt.Println("cpus: ", cpus)
 				controller.UpdateResourcePolicy(containerCgroup[node.Pid], cpus)
 			}
 		}
@@ -164,7 +167,7 @@ func main() {
 
 		if useCleaning == true {
 			if mapeCnt == config.Setting.Clean-1 {
-				fmt.Println("clean start")
+				//fmt.Println("clean start")
 				ptree.CleanRootChild(&root)
 				mapeCnt = 0
 				useCleaning = false
@@ -172,7 +175,7 @@ func main() {
 				mapeCnt += 1
 			}
 
-			fmt.Println("clean:", config.Setting.Clean, ", mapeCnt:", mapeCnt)
+			//fmt.Println("clean:", config.Setting.Clean, ", mapeCnt:", mapeCnt)
 		}
 		ioContainerList = nil
 		cpuContainerList = nil
@@ -182,14 +185,27 @@ func main() {
 	end()
 }
 
-func remove(slice []*ptree.Node, s int) []*ptree.Node {
+/*
+func remove(s []*ptree.Node, i int) []*ptree.Node {
+	s[i] = s[len(s)-1]
+	return s[:len(s)-1]
+}
+*/
+/*
+func remove(slice []*ptree.Node, i int) []*ptree.Node {
 	ret := make([]*ptree.Node, 0)
-	if len(slice)-1 == s {
-		ret = append(ret, slice[:s]...)
-		return append(ret, slice[s+1:]...)
+	if len(slice)-1 == i { // when s is last index
+		return append(ret, slice[:i]...)
 	} else {
-		return append(ret, slice[:s]...)
+		ret = append(ret, slice[:i]...)
+		return append(ret, slice[i+1:]...)
 	}
+}
+*/
+func remove(s []*ptree.Node, i int) []*ptree.Node {
+	//fmt.Println("remove slice:", s)
+	//fmt.Println("remove index:", i)
+	return append(s[:i], s[i+1:]...)
 }
 
 func end() {
