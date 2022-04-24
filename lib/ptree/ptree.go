@@ -2,6 +2,8 @@ package ptree
 
 import (
 	"fmt"
+	"srm/lib/logger"
+	"strconv"
 )
 
 type Node struct {
@@ -82,6 +84,33 @@ func PrintTree(root *Node, depth int, last bool) {
 	fmt.Printf("%d[%d]\n", root.Pid, root.Cnt)
 	if len(root.Children) > 0 {
 		//fmt.Println("# of children:", len(root.children))
+		for i, child := range root.Children {
+			isLast := false
+			if i == len(root.Children)-1 {
+				isLast = true
+			}
+			PrintTree(child, depth+1, isLast)
+		}
+	}
+}
+
+func LogTree(root *Node, depth int, last bool) {
+
+	if depth != 0 {
+		for i := 1; i < depth; i++ {
+			logger.Print("   ")
+		}
+		if last {
+			logger.Print("└──")
+		} else {
+			logger.Print("├──")
+		}
+	} else {
+		logger.Print("")
+	}
+	strtmp := strconv.Itoa(root.Pid) + "[" + strconv.Itoa(root.Cnt) + "]\n"
+	logger.Print(strtmp)
+	if len(root.Children) > 0 {
 		for i, child := range root.Children {
 			isLast := false
 			if i == len(root.Children)-1 {

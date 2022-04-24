@@ -47,8 +47,8 @@ func main() {
 	// MAPE-K Loop
 	var ioContainerList []*ptree.Node
 	var cpuContainerList []*ptree.Node
-	var mapeCnt int = 0
-	var useCleaning bool = false
+	//	var mapeCnt int = 0
+	//  var useCleaning bool = false
 	var useManagement bool = false
 
 	var containerCgroup map[int]cgroups.Cgroup
@@ -74,6 +74,7 @@ func main() {
 				}
 			}
 			if isContainer == false {
+				ptree.LogTree(&root, 0, false)
 				root.Children = remove(root.Children, index-cntOfDeletion)
 				//fmt.Println("deleted container:", pid, ", index:", index)
 				cntOfDeletion++
@@ -108,7 +109,7 @@ func main() {
 		if err := cmd.Run(); err != nil {
 			fmt.Println(err)
 		}
-		//ptree.PrintTree(&root, 0, false)
+		ptree.PrintTree(&root, 0, false)
 
 		// A
 		for _, node := range root.Children {
@@ -116,7 +117,7 @@ func main() {
 			//fmt.Println("Singularity -> pid:", node.Pid, ", sum: ", sum)
 			if sum >= config.Setting.Threshold {
 				ioContainerList = append(ioContainerList, node)
-				useCleaning = true
+				//				useCleaning = true
 				useManagement = true
 			} else {
 				cpuContainerList = append(cpuContainerList, node)
@@ -139,7 +140,7 @@ func main() {
 				if numOfCpu >= numOfContainer {
 					part := numOfCpu / numOfContainer
 					start := i * part
-					cpus := "" + strconv.Itoa(i*start) + "-" + strconv.Itoa(start+part-1)
+					cpus := "" + strconv.Itoa(start) + "-" + strconv.Itoa(start+part-1)
 					controller.UpdateResourcePolicy(containerCgroup[node.Pid], cpus)
 				}
 			}
@@ -165,18 +166,20 @@ func main() {
 			useManagement = false
 		}
 
-		if useCleaning == true {
-			if mapeCnt == config.Setting.Clean-1 {
-				//fmt.Println("clean start")
-				ptree.CleanRootChild(&root)
-				mapeCnt = 0
-				useCleaning = false
-			} else {
-				mapeCnt += 1
+		/*
+			if useCleaning == true {
+					if mapeCnt == config.Setting.Clean-1 {
+						//fmt.Println("clean start")
+						ptree.CleanRootChild(&root)
+						mapeCnt = 0
+						useCleaning = false
+					} else {
+						mapeCnt += 1
+					}
+					//fmt.Println("clean:", config.Setting.Clean, ", mapeCnt:", mapeCnt)
 			}
+		*/
 
-			//fmt.Println("clean:", config.Setting.Clean, ", mapeCnt:", mapeCnt)
-		}
 		ioContainerList = nil
 		cpuContainerList = nil
 
@@ -202,9 +205,8 @@ func remove(slice []*ptree.Node, i int) []*ptree.Node {
 	}
 }
 */
+
 func remove(s []*ptree.Node, i int) []*ptree.Node {
-	//fmt.Println("remove slice:", s)
-	//fmt.Println("remove index:", i)
 	return append(s[:i], s[i+1:]...)
 }
 

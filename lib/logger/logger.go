@@ -73,3 +73,7 @@ func Fatal(message string) {
 func End() {
 	_ = LogFile.Close()
 }
+
+func Print(message string) {
+	InfoLogger.Print(message)
+}
