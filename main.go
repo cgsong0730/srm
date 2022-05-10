@@ -47,9 +47,10 @@ func main() {
 	// MAPE-K Loop
 	var ioContainerList []*ptree.Node
 	var cpuContainerList []*ptree.Node
-	//	var mapeCnt int = 0
-	//  var useCleaning bool = false
+	var mapeCnt int = 0
+	var useCleaning bool = false
 	var useManagement bool = false
+	var loopCnt int = 0
 
 	var containerCgroup map[int]cgroups.Cgroup
 	containerCgroup = make(map[int]cgroups.Cgroup)
@@ -74,7 +75,7 @@ func main() {
 				}
 			}
 			if isContainer == false {
-				ptree.LogTree(&root, 0, false)
+				//ptree.LogTree(&root, 0, false)
 				root.Children = remove(root.Children, index-cntOfDeletion)
 				//fmt.Println("deleted container:", pid, ", index:", index)
 				cntOfDeletion++
@@ -110,6 +111,11 @@ func main() {
 			fmt.Println(err)
 		}
 		ptree.PrintTree(&root, 0, false)
+
+		if loopCnt%100 == 0 {
+			ptree.LogTree(&root, 0, false)
+		}
+		loopCnt++
 
 		// A
 		for _, node := range root.Children {
@@ -166,19 +172,17 @@ func main() {
 			useManagement = false
 		}
 
-		/*
-			if useCleaning == true {
-					if mapeCnt == config.Setting.Clean-1 {
-						//fmt.Println("clean start")
-						ptree.CleanRootChild(&root)
-						mapeCnt = 0
-						useCleaning = false
-					} else {
-						mapeCnt += 1
-					}
-					//fmt.Println("clean:", config.Setting.Clean, ", mapeCnt:", mapeCnt)
+		if useCleaning == true {
+			if mapeCnt == config.Setting.Clean-1 {
+				//fmt.Println("clean start")
+				ptree.CleanRootChild(&root)
+				mapeCnt = 0
+				useCleaning = false
+			} else {
+				mapeCnt += 1
 			}
-		*/
+			//fmt.Println("clean:", config.Setting.Clean, ", mapeCnt:", mapeCnt)
+		}
 
 		ioContainerList = nil
 		cpuContainerList = nil
