@@ -15,6 +15,7 @@ var (
 	WarnLogger  *log.Logger
 	ErrorLogger *log.Logger
 	FatalLogger *log.Logger
+	BasicLogger *log.Logger
 	LogFile     *os.File
 )
 
@@ -50,6 +51,7 @@ func Init() error {
 	WarnLogger = log.New(io.MultiWriter(LogFile, os.Stdout), "[WARN]\t", log.Ldate|log.Ltime)
 	ErrorLogger = log.New(io.MultiWriter(LogFile, os.Stdout), "[ERROR]\t", log.Ldate|log.Ltime)
 	FatalLogger = log.New(io.MultiWriter(LogFile, os.Stdout), "[FATAL]\t", log.Ldate|log.Ltime)
+	BasicLogger = log.New(io.MultiWriter(LogFile, os.Stdout), "", 0)
 
 	return nil
 }
@@ -75,5 +77,5 @@ func End() {
 }
 
 func Print(message string) {
-	InfoLogger.Print(message)
+	BasicLogger.Println(message)
 }

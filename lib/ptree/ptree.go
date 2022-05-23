@@ -95,28 +95,17 @@ func PrintTree(root *Node, depth int, last bool) {
 }
 
 func LogTree(root *Node, depth int, last bool) {
-
-	if depth != 0 {
-		for i := 1; i < depth; i++ {
-			logger.Print("   ")
-		}
-		if last {
-			logger.Print("└──")
-		} else {
-			logger.Print("├──")
-		}
-	} else {
-		logger.Print("")
-	}
-	strtmp := strconv.Itoa(root.Pid) + "[" + strconv.Itoa(root.Cnt) + "]\n"
+	strtmp := "\t" + strconv.Itoa(root.Pid) + " [label=\"" + strconv.Itoa(root.Cnt) + "\"]"
 	logger.Print(strtmp)
+
 	if len(root.Children) > 0 {
 		for i, child := range root.Children {
 			isLast := false
 			if i == len(root.Children)-1 {
 				isLast = true
 			}
-			PrintTree(child, depth+1, isLast)
+			logger.Print("\t" + strconv.Itoa(root.Pid) + " -> " + strconv.Itoa(child.Pid))
+			LogTree(child, depth+1, isLast)
 		}
 	}
 }

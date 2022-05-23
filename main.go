@@ -104,7 +104,7 @@ func main() {
 
 		go monitor.GetSystemcall(&root, "futex")
 		time.Sleep(time.Duration(config.Setting.Mape) * time.Second)
-		//fmt.Println("mape:", config.Setting.Mape)
+
 		cmd := exec.Command("clear")
 		cmd.Stdout = os.Stdout
 		if err := cmd.Run(); err != nil {
@@ -113,6 +113,7 @@ func main() {
 		ptree.PrintTree(&root, 0, false)
 
 		if loopCnt%100 == 0 {
+			logger.Info("print tree")
 			ptree.LogTree(&root, 0, false)
 		}
 		loopCnt++
