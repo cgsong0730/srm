@@ -47,8 +47,8 @@ func main() {
 	// MAPE-K Loop
 	var ioContainerList []*ptree.Node
 	var cpuContainerList []*ptree.Node
-	var mapeCnt int = 0
-	var useCleaning bool = false
+//	var mapeCnt int = 0
+//	var useCleaning bool = false
 	var useManagement bool = false
 	var loopCnt int = 0
 
@@ -115,6 +115,7 @@ func main() {
 		if loopCnt%100 == 0 {
 			logger.Info("print tree")
 			ptree.LogTree(&root, 0, false)
+      ptree.CleanRootChild(&root)
 		}
 		loopCnt++
 
@@ -173,6 +174,7 @@ func main() {
 			useManagement = false
 		}
 
+/* 
 		if useCleaning == true {
 			if mapeCnt == config.Setting.Clean-1 {
 				//fmt.Println("clean start")
@@ -184,6 +186,7 @@ func main() {
 			}
 			//fmt.Println("clean:", config.Setting.Clean, ", mapeCnt:", mapeCnt)
 		}
+*/
 
 		ioContainerList = nil
 		cpuContainerList = nil
