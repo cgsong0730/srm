@@ -69,7 +69,9 @@ func Error(err error) {
 }
 
 func Fatal(message string) {
-	FatalLogger.Println(message)
+	//FatalLogger.Println(message)
+	panic(message)
+
 }
 
 func End() {

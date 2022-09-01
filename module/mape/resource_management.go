@@ -41,7 +41,7 @@ func Run() error {
 
 	numOfCpu := analyzer.GetCpuInfo()
 	allOfCpu := "0-" + strconv.Itoa(numOfCpu-1)
-	fmt.Println("cpu:", allOfCpu)
+	//fmt.Println("cpu:", allOfCpu)
 
 	for true {
 		// M
